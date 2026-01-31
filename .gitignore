@@ -1,0 +1,28 @@
+# ===== Python =====
+__pycache__/
+*.pyc
+
+# ===== Editor / OS =====
+.DS_Store
+*#
+*.bak
+*.tmp
+Thumbs.db
+desktop.ini
+
+# ===== ComfyUI runtime =====
+output/
+input/
+logs/
+
+# ===== CRITICAL: Model files (NEVER COMMIT) =====
+models/
+photoreal_factory/models/
+**/*.pth
+**/*.safetensors
+**/*.ckpt
+**/*.onnx
+
+# ===== Virtualenv =====
+.venv/
+venv/

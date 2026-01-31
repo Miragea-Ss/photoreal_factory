@@ -1,0 +1,6 @@
+# ===============================
+# Optical Flow Grain Lock（動画専用）
+# ===============================
+grain_lock = OpticalFlowGrainLock(
+    grain_power=profile["film_physics"]["grain_power"]
+)

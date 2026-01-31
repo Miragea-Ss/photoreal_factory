@@ -1,0 +1,19 @@
+{
+  "name": "Photoreal Factory",
+  "author": "Miragea-Ss",
+  "version": "0.1.0",
+  "description": "High-end photoreal image processing pipeline for ComfyUI",
+  "repository": "https://github.com/Miragea-Ss/photoreal_factory",
+  "tags": [
+    "photoreal",
+    "upscale",
+    "film",
+    "image",
+    "factory"
+  ],
+  "nodes": [
+    "PhotorealFactoryLive",
+    "PhotorealFolderLoader",
+    "PhotorealImageSaver"
+  ]
+}

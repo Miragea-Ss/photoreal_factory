@@ -1,0 +1,129 @@
+# profiles/cinema_log.py
+import numpy as np
+import cv2
+import torch
+
+from diffusers import (
+    StableDiffusionXLImg2ImgPipeline,
+    ControlNetModel,
+    AutoencoderKL,
+    EulerAncestralDiscreteScheduler
+)
+from realesrgan import RealESRGANer
+from basicsr.archs.rrdbnet_arch import RRDBNet
+
+
+# ===============================
+# Loaders (VRAMPool用)
+# ===============================
+
+def load_realesrgan():
+    model = RRDBNet(
+        num_in_ch=3,
+        num_out_ch=3,
+        num_feat=64,
+        num_block=23,
+        num_grow_ch=32,
+        scale=4
+    )
+    return RealESRGANer(
+        scale=4,
+        model_path="models/RealESRGAN_x4plus.pth",
+        model=model,
+        tile=1024,
+        tile_pad=32,
+        pre_pad=0,
+        half=True
+    )
+
+
+def load_img2img():
+    controlnet = ControlNetModel.from_pretrained(
+        "xinsir/controlnet-tile-sdxl-1.0",
+        torch_dtype=torch.float16,
+        use_safetensors=True
+    )
+
+    vae = AutoencoderKL.from_pretrained(
+        "madebyollin/sdxl-vae-fp16-fix",
+        torch_dtype=torch.float16
+    )
+
+    pipe = StableDiffusionXLImg2ImgPipeline.from_pretrained(
+        "stabilityai/stable-diffusion-xl-base-1.0",
+        controlnet=controlnet,
+        vae=vae,
+        torch_dtype=torch.float16,
+        use_safetensors=True
+    )
+
+    pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(
+        pipe.scheduler.config
+    )
+
+    return pipe.cuda().eval()
+
+
+# ===============================
+# Film Physics (Phase 3)
+# ===============================
+
+def film_physics(image_rgb: np.ndarray) -> np.ndarray:
+    h, w, c = image_rgb.shape
+
+    # Luminance-based grain
+    gray = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2GRAY) / 255.0
+    grain_strength = (1.0 - gray) * 0.06
+
+    noise = np.random.normal(
+        0,
+        grain_strength[..., None] * 255,
+        image_rgb.shape
+    )
+
+    out = image_rgb.astype(np.float32) + noise
+
+    # Chromatic aberration
+    r, g, b = cv2.split(out)
+    M = np.float32([[1, 0, 1], [0, 1, 0]])
+    r = cv2.warpAffine(r, M, (w, h))
+
+    return np.clip(cv2.merge([r, g, b]), 0, 255).astype(np.uint8)
+
+
+# ===============================
+# Profile Definition
+# ===============================
+
+PROFILE = {
+    "type": "image",
+
+    "io": {
+        "extensions": ["*.png", "*.jpg", "*.jpeg", "*.webp"]
+    },
+
+    "upscale": {
+        "scale": 4
+    },
+
+    "img2img": {
+        "prompt": (
+            "cinematic raw photo, 35mm film, natural skin texture, "
+            "realistic lighting, shallow depth of field, film grain"
+        ),
+        "negative_prompt": (
+            "cgi, render, anime, illustration, plastic skin, smooth, blurry"
+        ),
+        "num_inference_steps": 30,
+        "guidance_scale": 7.0,
+        "strength": 0.55,
+        "controlnet_conditioning_scale": 0.65
+    },
+
+    "loaders": {
+        "realesrgan": load_realesrgan,
+        "img2img": load_img2img
+    },
+
+    "film_physics": film_physics
+}

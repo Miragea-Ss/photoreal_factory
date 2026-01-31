@@ -1,0 +1,14 @@
+# === Modern AI Libraries ===
+# Torch系は削除しました（手動インストール済みのため）
+diffusers>=0.35.0
+transformers>=4.49.0
+accelerate>=0.36.0
+safetensors
+spandrel      # Basicsrの代わりの最新ライブラリ
+
+# === Utilities ===
+opencv-python
+numpy
+pillow
+pyyaml
+imageio
